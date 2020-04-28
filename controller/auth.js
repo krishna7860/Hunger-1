@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Food = require("../models/Food");
 const ErrorResponse = require("../utils/errorResponse");
 const asyncHandler = require("../middleware/async");
 const jwt = require("jsonwebtoken");
@@ -50,7 +51,7 @@ exports.login = asyncHandler(async (req, res, next) => {
 // @desc          Authenticate User
 // @route         POST /api/v1/auth/get-user
 // @access        Private
-exports.getUser = asyncHandler(async (req, res) => {
+exports.getUser = asyncHandler(async (req, res, next) => {
   let token = req.headers.authtoken;
   let user = await jwt.verify(token, process.env.JWT_SECRET);
   if (user) {
@@ -84,3 +85,52 @@ const sendTokenResponse = (user, statusCode, res) => {
     token,
   });
 };
+
+// @desc          Update user food list
+// @route         UPDATE /api/v1/auth/book-food
+// @access        Private
+exports.updateFoodList = asyncHandler(async (req, res, next) => {
+  const foodList = await User.findById(req.params.id);
+  const foodId = req.body.bookFoodId;
+  let arr = foodList.bookedFoodId;
+  arr.push(foodId);
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    {
+      bookedFoodId: arr,
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+  if (!user) {
+    return next(
+      new ErrorResponse(`User Not Found with id of ${req.params.id}`, 404)
+    );
+  }
+  res.status(200).json({ success: true, data: user });
+});
+
+// @desc          GET user food list
+// @route         GET /api/v1/auth/get-user-food
+// @access        Private
+
+exports.getUserFood = asyncHandler(async (req, res, next) => {
+  let foodIdArr = req.body.arr;
+  // const foodList = await Food.find({
+  //   _id: { $in: foodIdArr },
+  // });
+  const foodList = [];
+  for (let item = 0; item < foodIdArr.length; item++) {
+    let food = await Food.findOne({ _id: foodIdArr[item] });
+    foodList.push(food);
+  }
+  if (foodList.length === 0) {
+    return next(new ErrorResponse(`Food Not Found`, 404));
+  }
+  res.status(200).json({
+    success: true,
+    data: foodList,
+  });
+});

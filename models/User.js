@@ -16,6 +16,9 @@ const UserSchema = new mongoose.Schema({
       "Please add a valid email",
     ],
   },
+  bookedFoodId: {
+    type: [String],
+  },
   role: {
     type: String,
     enum: ["feeder", "needy"],
